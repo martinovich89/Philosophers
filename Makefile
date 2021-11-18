@@ -4,10 +4,12 @@ INC				=	-I./headers
 
 SRCS			=	$(addprefix $(SRC_PATH), $(SRC))
 
-PHILO			=	philosophers.c
+PHILO			=	philo.c
+
+UTILS			=	utils/strings.c
 
 SRC				=	$(PHILO) \
-#					$()
+					$(UTILS)
 #					$()
 #					$()
 #					$()

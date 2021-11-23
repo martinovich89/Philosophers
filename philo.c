@@ -6,7 +6,7 @@
 /*   By: mhenry <mhenry@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/11/17 11:20:06 by mhenry            #+#    #+#             */
-/*   Updated: 2021/11/18 17:58:00 by mhenry           ###   ########.fr       */
+/*   Updated: 2021/11/23 17:19:11 by mhenry           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -55,12 +55,48 @@ int	set_vars(int argc, char **argv, t_vars *vars)
 	return (0);
 }
 
+int	my_usleep(size_t time, struct timeval *tv, struct timezone *tz)
+{
+	double	oldtime;
+	double	newtime;
+	double	time_f;
+
+	gettimeofday(tv, tz);
+	time_f = (double)time / 1000000;
+	oldtime = (double)tv->tv_sec + (double)tv->tv_usec / 1000000;
+	newtime = oldtime;
+	while (newtime - oldtime < time_f)
+	{
+		usleep(100);
+		if (!gettimeofday(tv, tz))
+			return (-1);
+		newtime = (double)tv->tv_sec + (double)tv->tv_usec / 1000000;
+	}
+	return (0);
+}
+
 void	*routine(void *ptr)
 {
-	t_vars *vars;
+	struct	timeval tv;
+	struct	timezone tz;
+	size_t id;
 
-	vars = (t_vars *)ptr;
-	printf("bonjour\n");
+	(void)tv;
+	(void)tz;
+	id = (size_t)ptr + 1;
+	fflush(stdout);
+	if (id % 2 == 1)
+	{
+//		printf("%zu\n", id);
+		write(1, "kek\n", 4);
+	}
+	if (id % 2 == 0)
+	{
+//		my_usleep(10000, &tv, &tz);
+		usleep(60000);
+//		printf("%zu\n", id);
+		write(1, "lel\n", 4);
+	}
 	/*
 	**	PHASE MANGER :
 	**		print manger
@@ -96,7 +132,7 @@ int	init_philo_and_mutex(t_vars *vars)
 	{
 		if (pthread_mutex_init(vars->mutex + i, NULL))
 			return (-1);
-		if (pthread_create(vars->philo + i, NULL, &routine, (void *)vars) != 0)
+		if (pthread_create(vars->philo + i, NULL, &routine, (void *)i) != 0)
 			return (-1);
 		i++;
 	}
@@ -111,9 +147,7 @@ int clear_philo_and_mutex(t_vars *vars)
 	while (i < (size_t)vars->philo_count)
 	{
 		if (vars->philo[i])
-		{
 			pthread_join(vars->philo[i], NULL);
-		}
 		i++;
 	}
 	free(vars->philo);

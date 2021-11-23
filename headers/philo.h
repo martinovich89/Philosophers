@@ -6,7 +6,7 @@
 /*   By: mhenry <mhenry@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/11/18 11:46:38 by mhenry            #+#    #+#             */
-/*   Updated: 2021/11/18 14:21:57 by mhenry           ###   ########.fr       */
+/*   Updated: 2021/11/23 17:02:11 by mhenry           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,6 +18,7 @@
 # include <unistd.h>
 # include <fcntl.h>
 # include <sys/wait.h>
+# include <sys/time.h>
 # include <string.h>
 # include <limits.h>
 # include <pthread.h>

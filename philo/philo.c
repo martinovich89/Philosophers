@@ -6,7 +6,7 @@
 /*   By: mhenry <mhenry@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/11/17 11:20:06 by mhenry            #+#    #+#             */
-/*   Updated: 2021/11/24 13:28:44 by mhenry           ###   ########.fr       */
+/*   Updated: 2021/11/24 18:33:01 by mhenry           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -77,17 +77,17 @@ int	my_usleep(size_t time, struct timeval *tv, struct timezone *tz)
 
 void	*routine(void *ptr)
 {
-	struct	timeval tv;
-	struct	timezone tz;
-	size_t id;
+	struct timeval	tv;
+	struct timezone	tz;
+	t_philo			*philo;
 
 	(void)tv;
 	(void)tz;
-	id = (size_t)ptr + 1;
+	philo = (t_philo *)ptr;
+	pthread_mutex_lock(&philo->vars->mutex[philo->id]);
+	printf("%zu\n", philo->id);
 	fflush(stdout);
-	if (id % 2 == 0)
-		usleep(60000);
-	
+	pthread_mutex_unlock(&philo->vars->mutex[philo->id]);
 	/*
 	**	PHASE MANGER :
 	**		print manger
@@ -105,10 +105,10 @@ void	*routine(void *ptr)
 
 int	alloc_philo_and_mutex(t_vars *vars)
 {
-	vars->philo = malloc(sizeof(pthread_t) * (vars->philo_count + 1));
+	vars->philo = malloc(sizeof(t_philo) * (vars->philo_count));
 	if (!vars->philo)
 		return (-1);
-	vars->mutex = malloc(sizeof(pthread_mutex_t) * (vars->philo_count + 1));
+	vars->mutex = malloc(sizeof(pthread_mutex_t) * (vars->philo_count));
 	if (!vars->mutex)
 		return (-1);
 	return (0);
@@ -121,9 +121,11 @@ int	init_philo_and_mutex(t_vars *vars)
 	i = 0;
 	while (i < (size_t)vars->philo_count)
 	{
-		if (pthread_mutex_init(vars->mutex + i, NULL))
+		vars->philo[i].vars = vars;
+		vars->philo[i].id = i;
+		if (pthread_mutex_init(&vars->mutex[i], NULL))
 			return (-1);
-		if (pthread_create(vars->philo + i, NULL, &routine, (void *)i) != 0)
+		if (pthread_create(&vars->philo[i].thread, NULL, &routine, (void *)(vars->philo + i)) != 0)
 			return (-1);
 		i++;
 	}
@@ -137,8 +139,8 @@ int clear_philo_and_mutex(t_vars *vars)
 	i = 0;
 	while (i < (size_t)vars->philo_count)
 	{
-		if (vars->philo[i])
-			pthread_join(vars->philo[i], NULL);
+		if (vars->philo[i].thread)
+			pthread_join(vars->philo[i].thread, NULL);
 		i++;
 	}
 	free(vars->philo);

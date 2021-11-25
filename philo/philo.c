@@ -6,7 +6,7 @@
 /*   By: mhenry <mhenry@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/11/17 11:20:06 by mhenry            #+#    #+#             */
-/*   Updated: 2021/11/24 18:33:01 by mhenry           ###   ########.fr       */
+/*   Updated: 2021/11/25 17:18:03 by mhenry           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -75,19 +75,59 @@ int	my_usleep(size_t time, struct timeval *tv, struct timezone *tz)
 	return (0);
 }
 
+void	fork_attribution(t_philo *philo)
+{
+	if (philo->id % 2 == 0)
+	{
+		philo->first_fork = philo->left_fork;
+		philo->last_fork = philo->right_fork;
+	}
+	else
+	{
+		philo->first_fork = philo->right_fork;
+		philo->last_fork = philo->left_fork;
+	}
+}
+
+void	update_status(t_philo *philo, int status)
+{
+	(void)philo;
+	(void)status;
+}
+
+void	print_status(t_philo *philo, int status)
+{
+	(void)philo;
+	(void)status;
+}
+
 void	*routine(void *ptr)
 {
 	struct timeval	tv;
 	struct timezone	tz;
 	t_philo			*philo;
+	size_t			id;
+	pthread_mutex_t	*mutex;
 
 	(void)tv;
 	(void)tz;
+
 	philo = (t_philo *)ptr;
-	pthread_mutex_lock(&philo->vars->mutex[philo->id]);
-	printf("%zu\n", philo->id);
-	fflush(stdout);
-	pthread_mutex_unlock(&philo->vars->mutex[philo->id]);
+	id = philo->id;
+	mutex = philo->vars->mutex;
+	philo->left_fork = mutex + id;
+	philo->right_fork = mutex + ((int)id != philo->vars->philo_count - 1) * (id + 1);
+	fork_attribution(philo);
+	pthread_mutex_lock(philo->first_fork);
+	pthread_mutex_lock(philo->last_fork);
+	update_status(philo, 1);
+	print_status(philo, 1);
+	pthread_mutex_unlock(philo->first_fork);
+	pthread_mutex_unlock(philo->last_fork);
+
+	update_status(philo, 2);
+	print_status(philo, 2);
+	
 	/*
 	**	PHASE MANGER :
 	**		print manger
@@ -123,6 +163,7 @@ int	init_philo_and_mutex(t_vars *vars)
 	{
 		vars->philo[i].vars = vars;
 		vars->philo[i].id = i;
+		vars->philo[i].is_dead = &vars->is_dead;
 		if (pthread_mutex_init(&vars->mutex[i], NULL))
 			return (-1);
 		if (pthread_create(&vars->philo[i].thread, NULL, &routine, (void *)(vars->philo + i)) != 0)

@@ -6,7 +6,7 @@
 /*   By: mhenry <mhenry@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/11/18 11:46:38 by mhenry            #+#    #+#             */
-/*   Updated: 2021/11/24 18:16:25 by mhenry           ###   ########.fr       */
+/*   Updated: 2021/11/25 17:19:28 by mhenry           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -31,14 +31,19 @@ typedef struct	s_philo
 {
 	struct s_vars	*vars;
 	pthread_t		thread;
-	pthread_mutex_t	fork;
+	pthread_mutex_t	*right_fork;
+	pthread_mutex_t	*left_fork;
+	pthread_mutex_t	*first_fork;
+	pthread_mutex_t *last_fork;
+	pthread_mutex_t	*is_dead;
 	size_t			id;
-	int				is_dead;
-
+	int				status;
+	char			*status_str;
 }	t_philo;
 
 typedef struct	s_vars
 {
+	pthread_mutex_t is_dead;
 	pthread_mutex_t	*mutex;
 	t_philo			*philo;
 	int				philo_count;
@@ -46,7 +51,6 @@ typedef struct	s_vars
 	int				tte;
 	int				tts;
 	int				maxmeal;
-	int				someone_dead;
 }	t_vars;
 
 int		ft_strlen(char *str);

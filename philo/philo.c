@@ -17,6 +17,41 @@ int	is_digit(char c)
 	return (c >= '0' && c <= '9');
 }
 
+void	ft_strcpy(char *dst, char *src)
+{
+	size_t	i;
+
+	i = 0;
+	while (src[i])
+	{
+		dst[i] = src[i];
+		i++;
+	}
+	dst[i] = '\0';
+}
+
+void	ft_strcat(char *dst, char *src)
+{
+	size_t	i;
+
+	i = 0;
+	while (dst[i])
+		i++;
+	ft_strcpy(dst + i, src);
+}
+
+void	ft_bzero(char *str, size_t n)
+{
+	size_t	i;
+
+	i = 0;
+	while (i < n)
+	{
+		str[i] = '\0';
+		i++;
+	}
+}
+
 int	invalid_nbs(char **argv)
 {
 	if (ft_strlen(argv[1]) > 12 || ft_strlen(argv[2]) > 12
@@ -37,6 +72,8 @@ int	check_arg(char *str)
 
 int	set_vars(int argc, char **argv, t_vars *vars)
 {
+	struct timeval	tv;
+	struct timezone	tz;
 	size_t i;
 
 	i = 1;
@@ -50,6 +87,8 @@ int	set_vars(int argc, char **argv, t_vars *vars)
 	vars->ttd = ft_atoi(argv[2]);
 	vars->tte = ft_atoi(argv[3]);
 	vars->tts = ft_atoi(argv[4]);
+	gettimeofday(&tv, &tz);
+	vars->chrono_start = tv.tv_sec * 1000000 + tv.tv_usec;
 	if (argc == 6)
 		vars->maxmeal = ft_atoi(argv[5]);
 	return (0);
@@ -89,35 +128,89 @@ void	fork_attribution(t_philo *philo)
 	}
 }
 
+void	timetostr(char *str, size_t cur_time)
+{
+	size_t	n;
+	size_t	i;
+
+	i = (cur_time == 0);
+	n = cur_time;
+	while (str[i])
+		i++;
+	while (n > 0)
+	{
+		n /= 10;
+		i++;
+	}
+	if (cur_time == 0)
+		return (ft_strcat(str, "0"));
+	str[i + 1] = '\0';
+	while (cur_time > 0)
+	{
+		i--;
+		str[i] = cur_time % 10 + '0';
+		cur_time /= 10;
+	}
+}
+
+void	build_str_to_print(t_philo *philo)
+{
+	ft_bzero(philo->str_to_print, 100);
+	gettimeofday(&philo->tv, &philo->tz);
+	philo->cur_time = philo->tv.tv_sec * 1000000 + philo->tv.tv_usec - philo->vars->chrono_start;;
+	timetostr(philo->str_to_print, philo->cur_time / 1000);
+	ft_strcat(philo->str_to_print, " : ");
+	ft_strcat(philo->str_to_print, philo->status_str);
+	ft_strcat(philo->str_to_print, " <- ");
+	timetostr(philo->str_to_print, philo->id);
+	ft_strcat(philo->str_to_print, "\n");;
+}
+
 void	update_status(t_philo *philo, int status)
 {
-	(void)philo;
-	(void)status;
+	if (status == 1)
+	{
+		philo->status = 1;
+		ft_strcpy(philo->status_str, "TIME_TO_EAT");
+	}
+	else if (status == 2)
+	{
+		philo->status = 2;
+		ft_strcpy(philo->status_str, "TIME_TO_SLEEP");
+	}
+	else if (status == 3)
+	{
+		philo->status = 3;
+		ft_strcpy(philo->status_str, "TIME_TO_THINK");
+	}
+	build_str_to_print(philo);
 }
 
 void	print_status(t_philo *philo, int status)
 {
-	(void)philo;
+	char *str;
+	
+	str = philo->str_to_print;
 	(void)status;
+	write(1, str, ft_strlen(str));
 }
 
 void	*routine(void *ptr)
 {
-	struct timeval	tv;
-	struct timezone	tz;
 	t_philo			*philo;
 	size_t			id;
 	pthread_mutex_t	*mutex;
 
-	(void)tv;
-	(void)tz;
 
+	// PHILO VARS INITIALIZATION
 	philo = (t_philo *)ptr;
 	id = philo->id;
 	mutex = philo->vars->mutex;
 	philo->left_fork = mutex + id;
 	philo->right_fork = mutex + ((int)id != philo->vars->philo_count - 1) * (id + 1);
 	fork_attribution(philo);
+
+	// EAT PHASE
 	pthread_mutex_lock(philo->first_fork);
 	pthread_mutex_lock(philo->last_fork);
 	update_status(philo, 1);
@@ -125,9 +218,14 @@ void	*routine(void *ptr)
 	pthread_mutex_unlock(philo->first_fork);
 	pthread_mutex_unlock(philo->last_fork);
 
+	usleep(1000000);
+
+	// SLEEP PHASE
 	update_status(philo, 2);
 	print_status(philo, 2);
 	
+	// THINK PHASE
+
 	/*
 	**	PHASE MANGER :
 	**		print manger

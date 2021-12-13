@@ -2,6 +2,10 @@ NAME			=	philo
 
 INC				=	-I./headers
 
+SRC_PATH		=	./
+
+#SRCS			=	./utils/strings.c ./philo.c
+
 SRCS			=	$(addprefix $(SRC_PATH), $(SRC))
 
 PHILO			=	philo.c

@@ -38,7 +38,12 @@ typedef struct	s_philo
 	pthread_mutex_t	*is_dead;
 	size_t			id;
 	int				status;
-	char			*status_str;
+	char			status_str[100];
+	char			str_to_print[100];
+	struct timeval	tv;
+	struct timezone	tz;
+	size_t			last_meal;
+	size_t			cur_time;
 }	t_philo;
 
 typedef struct	s_vars
@@ -51,6 +56,7 @@ typedef struct	s_vars
 	int				tte;
 	int				tts;
 	int				maxmeal;
+	size_t			chrono_start;
 }	t_vars;
 
 int		ft_strlen(char *str);

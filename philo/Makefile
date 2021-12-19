@@ -26,9 +26,9 @@ OBJS			=	$(SRCS:.c=.o)
 
 CC				=	clang
 
-CFLAGS			=	-Wall -Wextra -Werror -fsanitize=address -g3
+CFLAGS			=	-Wall -Wextra -Werror -pthread #-fsanitize=thread
 
-all : $(NAME)
+all : $(NAME) $(MAKEFILE)
 
 $(NAME) : $(OBJS)
 		$(CC) $(CFLAGS) $(INC) -o $(NAME) $(OBJS) $(LIB)

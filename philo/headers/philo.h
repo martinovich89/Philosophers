@@ -6,7 +6,7 @@
 /*   By: mhenry <mhenry@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/11/18 11:46:38 by mhenry            #+#    #+#             */
-/*   Updated: 2021/11/25 17:19:28 by mhenry           ###   ########.fr       */
+/*   Updated: 2021/12/19 16:07:14 by mhenry           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -35,7 +35,7 @@ typedef struct	s_philo
 	pthread_mutex_t	*left_fork;
 	pthread_mutex_t	*first_fork;
 	pthread_mutex_t *last_fork;
-	pthread_mutex_t	*is_dead;
+	int				*is_dead;
 	size_t			id;
 	int				status;
 	char			status_str[100];
@@ -43,13 +43,14 @@ typedef struct	s_philo
 	struct timeval	tv;
 	struct timezone	tz;
 	size_t			last_meal;
-	size_t			cur_time;
+	size_t			elapsed_time;
 }	t_philo;
 
 typedef struct	s_vars
 {
-	pthread_mutex_t is_dead;
+	int				is_dead;
 	pthread_mutex_t	*mutex;
+	pthread_mutex_t print;
 	t_philo			*philo;
 	int				philo_count;
 	int				ttd;
@@ -57,6 +58,7 @@ typedef struct	s_vars
 	int				tts;
 	int				maxmeal;
 	size_t			chrono_start;
+	int				start;
 }	t_vars;
 
 int		ft_strlen(char *str);

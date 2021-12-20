@@ -36,20 +36,21 @@ typedef struct	s_philo
 	pthread_mutex_t	*first_fork;
 	pthread_mutex_t *last_fork;
 	int				*is_dead;
+	int				*satiated;
 	size_t			id;
 	int				status;
 	char			status_str[100];
 	char			str_to_print[100];
-	struct timeval	tv;
-	struct timezone	tz;
 	size_t			last_meal;
 	size_t			elapsed_time;
 }	t_philo;
 
 typedef struct	s_vars
 {
+	int				satiated;
 	int				is_dead;
 	pthread_mutex_t	*mutex;
+	pthread_mutex_t	death;
 	pthread_mutex_t print;
 	t_philo			*philo;
 	int				philo_count;

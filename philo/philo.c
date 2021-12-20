@@ -118,6 +118,7 @@ int	set_vars(int argc, char **argv, t_vars *vars)
 	vars->ttd = ft_atoi(argv[2]);
 	vars->tte = ft_atoi(argv[3]);
 	vars->tts = ft_atoi(argv[4]);
+	vars->maxmeal = 0;
 	vars->chrono_start = get_current_time();
 	if (argc == 6)
 		vars->maxmeal = ft_atoi(argv[5]);
@@ -193,26 +194,38 @@ void	build_str_to_print(t_philo *philo)
 	i = 0;
 	ft_bzero(philo->str_to_print, 100);
 	philo->elapsed_time = get_current_time() - philo->vars->chrono_start;
-	printf("pre str construction : %zu\n", get_current_time());
 	i += timetostr(philo->str_to_print + i, philo->elapsed_time / 1000);
 	i += ft_strcpy(philo->str_to_print + i, " : ");
 	i += ft_strcpy(philo->str_to_print + i, philo->status_str);
 	i += ft_strcpy(philo->str_to_print + i, " <- ");
 	i += timetostr(philo->str_to_print + i, philo->id);
 	i += ft_strcpy(philo->str_to_print + i, "\n");
-	printf("post str construction : %zu\n", get_current_time());
 }
 
-void	update_status(t_philo *philo, int status)
+int	philo_death_check(t_philo *philo)
 {
+//	printf("%zu | %zu | %zu\n", philo->id, (get_current_time() - philo->last_meal) / 1000, philo->last_meal);
+	if ((get_current_time() - philo->last_meal) / 1000
+		> (size_t)philo->vars->ttd)
+		return (1);
+	return (0);
+}
+
+int	update_status(t_philo *philo, int status)
+{
+	if (philo->vars->chrono_start && philo_death_check(philo))
+	{
+		write(1, "lul\n", 4);
+		pthread_mutex_lock(&philo->vars->death);
+		*philo->is_dead = 1;
+		pthread_mutex_unlock(&philo->vars->death);
+		status = 4;
+	}
 	if (status == 1)
 	{
 		philo->status = 1;
 		ft_strcpy(philo->status_str, "TIME_TO_EAT");
-		if (philo->vars->start == 0)
-			philo->vars->start = 1;
-		else
-			philo->last_meal = get_current_time();
+		philo->last_meal = get_current_time();
 	}
 	else if (status == 2)
 	{
@@ -224,7 +237,14 @@ void	update_status(t_philo *philo, int status)
 		philo->status = 3;
 		ft_strcpy(philo->status_str, "TIME_TO_THINK");
 	}
+	else if (status == 4)
+	{
+		philo->status = 3;
+		ft_strcpy(philo->status_str, "TIME_TO_DIE");
+		return (1);
+	}
 	build_str_to_print(philo);
+	return (0);
 }
 
 int	print_status(t_philo *philo, int status)
@@ -233,21 +253,61 @@ int	print_status(t_philo *philo, int status)
 	
 	str = philo->str_to_print;
 	(void)status;
-	if (!philo->vars->is_dead)
-		write(1, str, ft_strlen(str));
-	else
-		return (-1);
+	pthread_mutex_lock(&philo->vars->death);
+	if (philo->vars->is_dead)
+		return (1);
+	pthread_mutex_unlock(&philo->vars->death);
+	write(1, str, ft_strlen(str));
 	return (0);
 }
 
-void	sleep_until(t_philo *philo, size_t time_to_stop)
+int	sleep_until(t_philo *philo, size_t time_to_stop)
 {
 	(void)philo;
 	while (get_current_time() < time_to_stop)
 	{
+		pthread_mutex_lock(&philo->vars->death);
+		if (philo->vars->is_dead)
+			return (1);
+		pthread_mutex_unlock(&philo->vars->death);
 		usleep(100);
 	}
-	printf("%zu\n",get_current_time());
+	return (0);
+}
+
+int	eat_phase(t_philo *philo)
+{
+	pthread_mutex_lock(philo->first_fork);
+	pthread_mutex_lock(philo->last_fork);
+	if (update_status(philo, 1))
+		return (1);
+	if (print_status(philo, 1))
+		return (1);
+	if (sleep_until(philo, philo->last_meal + philo->vars->tte * 1000))
+		return (1);
+	pthread_mutex_unlock(philo->first_fork);
+	pthread_mutex_unlock(philo->last_fork);
+	return (0);
+}
+
+int	sleep_phase(t_philo *philo)
+{
+	if (update_status(philo, 2))
+		return (1);
+	if (print_status(philo, 2))
+		return (1);
+	if (sleep_until(philo, philo->last_meal + (philo->vars->tte + philo->vars->tts) * 1000))
+		return (1);
+	return (0);
+}
+
+int	think_phase(t_philo *philo)
+{
+	if (update_status(philo, 3))
+		return (1);
+	if (print_status(philo, 3))
+		return (1);
+	return (0);
 }
 
 void	*routine(void *ptr)
@@ -280,23 +340,15 @@ void	*routine(void *ptr)
 	}
 */
 	// EAT PHASE
-//	pthread_mutex_lock(philo->first_fork);
-//	pthread_mutex_lock(philo->last_fork);
-	update_status(philo, 1);
-	print_status(philo, 1);
-
-	sleep_until(philo, philo->last_meal + philo->vars->tte * 1000);
-
-//	pthread_mutex_unlock(philo->first_fork);
-//	pthread_mutex_unlock(philo->last_fork);
-
-	// SLEEP PHASE
-	update_status(philo, 2);
-	print_status(philo, 2);
-	sleep_until(philo, philo->last_meal + philo->vars->tte + philo->vars->tts);
-	// THINK PHASE
-	update_status(philo, 3);
-	print_status(philo, 3);
+	while (1)
+	{
+		if (eat_phase(philo))
+			return (ptr);
+		if (sleep_phase(philo))
+			return (ptr);
+		if (think_phase(philo))
+			return (ptr);
+	}
 	/*
 	**	PHASE MANGER :
 	**		print manger
@@ -328,6 +380,7 @@ int	init_philo_and_mutex(t_vars *vars)
 	size_t	i;
 
 	pthread_mutex_init(&vars->print, NULL);
+	pthread_mutex_init(&vars->death, NULL);
 	i = 0;
 	while (i < (size_t)vars->philo_count)
 	{
@@ -345,7 +398,7 @@ int	init_philo_and_mutex(t_vars *vars)
 			return (-1);
 		i++;
 	}
-	usleep(1000);
+	usleep(vars->ttd * 100);
 	i = 0;
 	while (i < (size_t)vars->philo_count)
 	{
@@ -374,6 +427,18 @@ int clear_philo_and_mutex(t_vars *vars)
 	return (0);
 }
 
+void	check_death(t_vars *vars)
+{
+	while (1)
+	{
+		pthread_mutex_lock(&vars->death);
+		if (vars->is_dead)
+			return ;
+		pthread_mutex_unlock(&vars->death);
+		usleep(100);
+	}
+}
+
 int main(int argc, char **argv)
 {
 	t_vars vars;
@@ -399,7 +464,7 @@ int main(int argc, char **argv)
 	/*
 	**	CLEAR
 	*/
-	
+	check_death(&vars);
 	clear_philo_and_mutex(&vars);
 	return (0);
 }

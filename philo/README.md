@@ -1,2 +1,2 @@
-# Philosophers
-solve philosophers puzzle with forks and mutex
+# phisophers
+solve phisophers puzzle with forks and mutex

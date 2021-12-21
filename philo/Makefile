@@ -8,11 +8,11 @@ SRC_PATH		=	./
 
 SRCS			=	$(addprefix $(SRC_PATH), $(SRC))
 
-PHILO			=	philo.c
+philo			=	philo.c
 
 UTILS			=	utils/strings.c
 
-SRC				=	$(PHILO) \
+SRC				=	$(philo) \
 					$(UTILS)
 #					$()
 #					$()

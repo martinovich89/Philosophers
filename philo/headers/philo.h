@@ -27,23 +27,23 @@
 ** ttd, tte and tts refer to : time to die, time to eat and time to sleep.
 */
 
-typedef struct	s_philo
+typedef struct	s_phi
 {
 	struct s_vars	*vars;
-	pthread_t		thread;
+	pthread_t		philo;
 	pthread_mutex_t	*right_fork;
 	pthread_mutex_t	*left_fork;
 	pthread_mutex_t	*first_fork;
 	pthread_mutex_t *last_fork;
-	int				*is_dead;
-	int				*satiated;
+	int				is_dead;
+	int				satiated;
 	size_t			id;
 	int				status;
 	char			status_str[100];
 	char			str_to_print[100];
 	size_t			last_meal;
 	size_t			elapsed_time;
-}	t_philo;
+}	t_phi;
 
 typedef struct	s_vars
 {
@@ -52,7 +52,7 @@ typedef struct	s_vars
 	pthread_mutex_t	*mutex;
 	pthread_mutex_t	death;
 	pthread_mutex_t print;
-	t_philo			*philo;
+	t_phi			*phi;
 	int				philo_count;
 	int				ttd;
 	int				tte;

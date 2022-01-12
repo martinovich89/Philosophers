@@ -39,8 +39,9 @@ typedef struct	s_phi
 	int				satiated;
 	size_t			id;
 	int				status;
-	char			status_str[100];
-	char			str_to_print[100];
+	char			status_str[20];
+	char			str_pre_print[40];
+	char			str_to_print[60];
 	size_t			last_meal;
 	size_t			elapsed_time;
 }	t_phi;

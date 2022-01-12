@@ -4,9 +4,9 @@ INC				=	-I./headers
 
 SRC_PATH		=	./
 
-#SRCS			=	./utils/strings.c ./philo.c
+SRCS			=	./utils/strings.c ./philo.c
 
-SRCS			=	$(addprefix $(SRC_PATH), $(SRC))
+#SRCS			=	$(addprefix $(SRC_PATH), $(SRC))
 
 philo			=	philo.c
 
@@ -24,17 +24,17 @@ SRC				=	$(philo) \
 
 OBJS			=	$(SRCS:.c=.o)
 
-CC				=	clang
+CC				=	gcc
 
 CFLAGS			=	-Wall -Wextra -Werror -pthread #-fsanitize=thread
 
 all : $(NAME) $(MAKEFILE)
 
 $(NAME) : $(OBJS)
-		$(CC) $(CFLAGS) $(INC) -o $(NAME) $(OBJS) $(LIB)
+		$(CC) $(CFLAGS) -o $(NAME) $(INC) $(OBJS)
 
-%o : %c
-		$(CC) $(CFLAGS) $(INC) -o $a -c $<
+#%o : %c
+#		$(CC) $(CFLAGS) $(INC) -o $a -c $<
 
 clean :
 		$(RM) $(OBJS)

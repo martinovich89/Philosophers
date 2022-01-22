@@ -113,16 +113,19 @@ int	set_vars(int argc, char **argv, t_vars *vars)
 			return (-1);
 		i++;
 	}
+	vars->satiated = 0;
 	vars->is_dead = 0;
 	vars->start = 0;
 	vars->philo_count = ft_atoi(argv[1]);
 	vars->ttd = ft_atoi(argv[2]);
 	vars->tte = ft_atoi(argv[3]);
 	vars->tts = ft_atoi(argv[4]);
-	vars->maxmeal = 0;
+	vars->maxmeal = -1;
 	vars->chrono_start = 0;
 	if (argc == 6)
 		vars->maxmeal = ft_atoi(argv[5]);
+	if (vars->philo_count < 0 || vars->ttd < 0 || vars->tte < 0 || vars->tts < 0)
+		return (-1);
 	return (0);
 }
 
@@ -253,7 +256,9 @@ int	update_status(t_phi *phi, int status)
 	{
 		phi->status = 1;
 		ft_strcpy(phi->status_str, "is eating");
+		pthread_mutex_lock(&phi->vars->meal);
 		phi->last_meal = get_current_time();
+		pthread_mutex_unlock(&phi->vars->meal);
 	}
 	else if (status == 2)
 	{
@@ -267,11 +272,13 @@ int	update_status(t_phi *phi, int status)
 	}
 	else if (status == 4)
 	{
+		pthread_mutex_lock(&phi->vars->death);
 		if (phi->vars->is_dead - 1 == (int)phi->id)
 		{
 			phi->status = 4;
-			ft_strcpy(phi->status_str, "has died");
+			ft_strcpy(phi->status_str, "died");
 		}
+		pthread_mutex_unlock(&phi->vars->death);
 		return (1);
 	}
 	return (0);
@@ -279,7 +286,6 @@ int	update_status(t_phi *phi, int status)
 
 int	print_death(t_phi *phi)
 {
-	write(1, "kek1\n", 5);
 	build_str_to_print(phi, phi->str_to_print, phi->str_pre_print);
 	if (phi->status == 4)
 		write(1, phi->str_to_print, ft_strlen(phi->str_to_print));
@@ -297,7 +303,7 @@ int	print_status(t_phi *phi, pthread_mutex_t *print_mutex, pthread_mutex_t *deat
 	pthread_mutex_lock(death_mutex);
 	if (phi->vars->is_dead)
 	{
-		update_status(phi, 4);
+		ft_strcpy(phi->status_str, "died");
 //		build_str_pre_print(phi, phi->str_pre_print);
 //		pthread_mutex_lock(print_mutex);	
 		return (print_death(phi));
@@ -336,12 +342,20 @@ int	sleep_until(t_phi *phi, size_t time_to_stop)
 	return (0);
 }
 
+void	wait_for_death(t_phi *phi)
+{
+	pthread_mutex_unlock(phi->first_fork);
+	sleep_until(phi, ~0);
+}
+
 int	eat_phase(t_phi *phi)
 {
 	pthread_mutex_lock(phi->first_fork);
 	update_status(phi, 0);
 	if (print_status(phi, &phi->vars->print, &phi->vars->death))
 		return (unlock_before_return(phi->first_fork, NULL));
+	if (phi->first_fork == phi->last_fork)
+		wait_for_death(phi);
 	pthread_mutex_lock(phi->last_fork);
 	update_status(phi, 0);
 	if (print_status(phi, &phi->vars->print, &phi->vars->death))
@@ -387,14 +401,17 @@ void	*routine(void *ptr)
 	t_phi			*phi;
 	size_t			id;
 	pthread_mutex_t	*mutex;
-	int				next_id;
+//	int				next_id;
 
 	// phi VARS INITIALIZATION
 	phi = (t_phi *)ptr;
 	id = phi->id;
+	phi->meal_count = 0;
+	pthread_mutex_lock(&phi->vars->satiated_mutex);
 	phi->satiated = 0;
+	pthread_mutex_unlock(&phi->vars->satiated_mutex);
 	mutex = phi->vars->mutex;
-	next_id = ((int)id != phi->vars->philo_count - 1) * (id + 1);
+//	next_id = ((int)id != phi->vars->philo_count - 1) * (id + 1);
 	phi->left_fork = mutex + id;
 	phi->right_fork = mutex + ((int)id != phi->vars->philo_count - 1) * (id + 1);
 	fork_attribution(phi);
@@ -405,7 +422,9 @@ void	*routine(void *ptr)
 	{
 		phi->vars->chrono_start = get_current_time();
 	}
+	pthread_mutex_lock(&phi->vars->meal);
 	phi->last_meal = phi->vars->chrono_start;
+	pthread_mutex_unlock(&phi->vars->meal);
 	pthread_mutex_unlock(&phi->vars->print);
 
 /*	int quit = 0;
@@ -421,9 +440,24 @@ void	*routine(void *ptr)
 	// EAT PHASE
 	while (1)
 	{
+		pthread_mutex_lock(&phi->vars->satiated_mutex);
+		if (phi->vars->satiated)
+		{
+			pthread_mutex_unlock(&phi->vars->satiated_mutex);
+			return (NULL);
+		}
+		pthread_mutex_unlock(&phi->vars->satiated_mutex);
 		if (eat_phase(phi))
 		{
 			return (NULL);
+		}
+		phi->meal_count++;
+//		printf("%i | %i\n", phi->meal_count, phi->vars->maxmeal);
+		if (phi->vars->maxmeal != -1 && phi->meal_count >= phi->vars->maxmeal)
+		{
+			pthread_mutex_lock(&phi->vars->satiated_mutex);
+			phi->satiated = 1;
+			pthread_mutex_unlock(&phi->vars->satiated_mutex);
 		}
 		if (sleep_phase(phi))
 		{
@@ -464,6 +498,9 @@ int	init_philo_and_mutex(t_vars *vars)
 {
 	size_t	i;
 
+	vars->phi->last_meal = 0;
+	pthread_mutex_init(&vars->meal, NULL);
+	pthread_mutex_init(&vars->satiated_mutex, NULL);
 	pthread_mutex_init(&vars->print, NULL);
 	pthread_mutex_init(&vars->death, NULL);
 	i = 0;
@@ -493,6 +530,22 @@ int	init_philo_and_mutex(t_vars *vars)
 	return (0);
 }
 
+void	destroy_all_mutex(t_vars *vars)
+{
+	size_t i;
+
+	i = 0;
+	while (i < (size_t)vars->philo_count)
+	{
+		pthread_mutex_destroy(vars->mutex + i);
+		i++;
+	}
+	pthread_mutex_destroy(&vars->death);
+	pthread_mutex_destroy(&vars->print);
+	pthread_mutex_destroy(&vars->meal);
+	pthread_mutex_destroy(&vars->satiated_mutex);
+}
+
 int clear_philo_and_mutex(t_vars *vars)
 {
 	size_t	i;
@@ -504,6 +557,7 @@ int clear_philo_and_mutex(t_vars *vars)
 			pthread_join(vars->phi[i].philo, NULL);
 		i++;
 	}
+	destroy_all_mutex(vars);
 	free(vars->phi);
 	vars->phi = NULL;
 	free(vars->mutex);
@@ -542,21 +596,30 @@ void	check_philo_status(t_vars *vars)
 		while (i < (size_t)vars->philo_count)
 		{
 			//printf("%zu\n", vars->phi[i].last_meal);
+			pthread_mutex_lock(&vars->meal);
 			if (vars->phi[i].last_meal && philo_death_check(vars->phi + i))
 			{
+				pthread_mutex_unlock(&vars->meal);
 				pthread_mutex_lock(&vars->death);
 				vars->is_dead = i + 1;
-				printf("%zu, %zu, %zu\n", i, vars->phi[i].last_meal, get_current_time() - vars->phi[i].last_meal);
+//				printf("%zu, %zu, %zu\n", i, vars->phi[i].last_meal, get_current_time() - vars->phi[i].last_meal);
 				pthread_mutex_unlock(&vars->death);
-				kek();
 				return ;
 			}
+			pthread_mutex_unlock(&vars->meal);
+			pthread_mutex_lock(&vars->satiated_mutex);
 			if (vars->phi[i].satiated)
 				n++;
+			pthread_mutex_unlock(&vars->satiated_mutex);
 			i++;
 		}
 		if (n == (size_t)vars->philo_count)
+		{
+			pthread_mutex_lock(&vars->satiated_mutex);
+			vars->satiated = 1;
+			pthread_mutex_unlock(&vars->satiated_mutex);
 			return ;
+		}
 	}
 }
 
@@ -585,7 +648,7 @@ int main(int argc, char **argv)
 	/*
 	**	CLEAR
 	*/
-	while (1)
+	while (vars.philo_count)
 	{
 		pthread_mutex_lock(&vars.print);
 		if (vars.chrono_start)

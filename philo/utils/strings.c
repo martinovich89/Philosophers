@@ -36,7 +36,7 @@ int		ft_atoi(char *str)
 {
 	size_t	i;
 	int		sign;
-	int		nb;
+	size_t	nb;
 
 	if (ft_strcmp(str, "-2147483648") == 0)
 		return (-2147483648);
@@ -45,9 +45,11 @@ int		ft_atoi(char *str)
 	i = (str[0] == '-');
 	while (str[i])
 	{
+		if (nb > 2147483647)
+			return (-1);
 		nb *= 10;
 		nb += str[i] - '0';
 		i++;
 	}
-	return (nb * sign);
+	return ((int)nb * sign);
 }

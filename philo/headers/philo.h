@@ -36,6 +36,7 @@ typedef struct	s_phi
 	pthread_mutex_t	*first_fork;
 	pthread_mutex_t *last_fork;
 	int				is_dead;
+	int				meal_count;
 	int				satiated;
 	size_t			id;
 	int				status;
@@ -53,6 +54,8 @@ typedef struct	s_vars
 	pthread_mutex_t	*mutex;
 	pthread_mutex_t	death;
 	pthread_mutex_t print;
+	pthread_mutex_t meal;
+	pthread_mutex_t satiated_mutex;
 	t_phi			*phi;
 	int				philo_count;
 	int				ttd;

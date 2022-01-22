@@ -28,13 +28,13 @@ CC				=	gcc
 
 CFLAGS			=	-Wall -Wextra -Werror -pthread #-fsanitize=thread -g3
 
-all : $(NAME) $(MAKEFILE)
+all : $(NAME)
 
 $(NAME) : $(OBJS)
 		$(CC) $(CFLAGS) -o $(NAME) $(INC) $(OBJS)
 
-#%o : %c
-#		$(CC) $(CFLAGS) $(INC) -o $a -c $<
+%.o : %.c Makefile
+	$(CC) $(CFLAGS) $(INC) -o $@ -c $<
 
 clean :
 		$(RM) $(OBJS)

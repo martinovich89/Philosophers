@@ -26,12 +26,12 @@ OBJS			=	$(SRCS:.c=.o)
 
 CC				=	gcc
 
-CFLAGS			=	-Wall -Wextra -Werror -pthread #-fsanitize=thread -g3
+CFLAGS			=	-Wall -Wextra -Werror -pthread #-fsanitize=thread
 
 all : $(NAME)
 
 $(NAME) : $(OBJS)
-		$(CC) $(CFLAGS) -o $(NAME) $(INC) $(OBJS)
+		$(CC) $(CFLAGS) $(INC) $(OBJS) -o $(NAME)
 
 %.o : %.c Makefile
 	$(CC) $(CFLAGS) $(INC) -o $@ -c $<

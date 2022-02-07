@@ -6,7 +6,7 @@
 /*   By: mhenry <mhenry@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/11/18 11:46:38 by mhenry            #+#    #+#             */
-/*   Updated: 2021/12/19 16:07:14 by mhenry           ###   ########.fr       */
+/*   Updated: 2022/02/07 14:38:21 by mhenry           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -64,10 +64,13 @@ typedef struct	s_vars
 	int				maxmeal;
 	size_t			chrono_start;
 	int				start;
+	int				stop;
 }	t_vars;
 
 int		ft_strlen(char *str);
 int		ft_strcmp(char *s1, char *s2);
 int		ft_atoi(char *str);
+
+void	set_mutexed_var(void *var, int val, pthread_mutex_t *mutex);
 
 #endif

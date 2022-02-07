@@ -6,7 +6,7 @@
 /*   By: mhenry <mhenry@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/11/17 11:20:06 by mhenry            #+#    #+#             */
-/*   Updated: 2021/12/19 17:11:23 by mhenry           ###   ########.fr       */
+/*   Updated: 2022/02/07 15:14:42 by mhenry           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -116,6 +116,7 @@ int	set_vars(int argc, char **argv, t_vars *vars)
 	vars->satiated = 0;
 	vars->is_dead = 0;
 	vars->start = 0;
+	vars->stop = 0;
 	vars->philo_count = ft_atoi(argv[1]);
 	vars->ttd = ft_atoi(argv[2]);
 	vars->tte = ft_atoi(argv[3]);
@@ -287,8 +288,11 @@ int	update_status(t_phi *phi, int status)
 int	print_death(t_phi *phi)
 {
 	build_str_to_print(phi, phi->str_to_print, phi->str_pre_print);
-	if (phi->status == 4)
+	if ((size_t)phi->vars->is_dead == phi->id + 1)
+	{
 		write(1, phi->str_to_print, ft_strlen(phi->str_to_print));
+	}
+	phi->vars->stop = 1;
 	pthread_mutex_unlock(&phi->vars->death);
 	pthread_mutex_unlock(&phi->vars->print);
 	return (1);
@@ -299,13 +303,10 @@ int	print_status(t_phi *phi, pthread_mutex_t *print_mutex, pthread_mutex_t *deat
 	char *str;
 
 	pthread_mutex_lock(print_mutex);
-//	build_str_pre_print(phi, phi->str_pre_print);
 	pthread_mutex_lock(death_mutex);
 	if (phi->vars->is_dead)
 	{
 		ft_strcpy(phi->status_str, "died");
-//		build_str_pre_print(phi, phi->str_pre_print);
-//		pthread_mutex_lock(print_mutex);	
 		return (print_death(phi));
 	}
 	else
@@ -367,6 +368,7 @@ int	eat_phase(t_phi *phi)
 	{
 		unlock_before_return(phi->first_fork, phi->last_fork);
 		pthread_mutex_lock(&phi->vars->print);
+		pthread_mutex_lock(&phi->vars->death);
 		return (print_death(phi));
 	}
 	pthread_mutex_unlock(phi->first_fork);
@@ -382,6 +384,7 @@ int	sleep_phase(t_phi *phi)
 	if (sleep_until(phi, phi->last_meal + (phi->vars->tte + phi->vars->tts) * 1000))
 	{
 		pthread_mutex_lock(&phi->vars->print);
+		pthread_mutex_lock(&phi->vars->death);
 		return (print_death(phi));
 	}
 	return (0);
@@ -406,9 +409,7 @@ void	*routine(void *ptr)
 	// phi VARS INITIALIZATION
 	phi = (t_phi *)ptr;
 	id = phi->id;
-	phi->meal_count = 0;
 	pthread_mutex_lock(&phi->vars->satiated_mutex);
-	phi->satiated = 0;
 	pthread_mutex_unlock(&phi->vars->satiated_mutex);
 	mutex = phi->vars->mutex;
 //	next_id = ((int)id != phi->vars->philo_count - 1) * (id + 1);
@@ -416,8 +417,9 @@ void	*routine(void *ptr)
 	phi->right_fork = mutex + ((int)id != phi->vars->philo_count - 1) * (id + 1);
 	fork_attribution(phi);
 	pthread_mutex_lock(&phi->vars->print);
+	phi->status = -1;
 	printf("%zu\r", phi->vars->chrono_start);
-//	fflush(stdout);
+	fflush(stdout);
 	if (!phi->vars->chrono_start)
 	{
 		phi->vars->chrono_start = get_current_time();
@@ -512,6 +514,10 @@ int	init_philo_and_mutex(t_vars *vars)
 	}
 	i = 0;
 	while (i < (size_t)vars->philo_count)
+		ft_memset(&vars->phi[i], sizeof(t_phi), 0);
+		i++;
+	i = 0;
+	while (i < (size_t)vars->philo_count)
 	{
 		vars->phi[i].vars = vars;
 		vars->phi[i].id = i;
@@ -584,6 +590,13 @@ int	philo_death_check(t_phi *phi)
 	return (0);
 }
 
+void	set_mutexed_var(void *var, int val, pthread_mutex_t *mutex)
+{
+	pthread_mutex_lock(mutex);
+	*(int *)var = val;
+	pthread_mutex_unlock(mutex);
+}
+
 void	check_philo_status(t_vars *vars)
 {
 	size_t	i;
@@ -595,15 +608,11 @@ void	check_philo_status(t_vars *vars)
 		n = 0;
 		while (i < (size_t)vars->philo_count)
 		{
-			//printf("%zu\n", vars->phi[i].last_meal);
 			pthread_mutex_lock(&vars->meal);
 			if (vars->phi[i].last_meal && philo_death_check(vars->phi + i))
 			{
 				pthread_mutex_unlock(&vars->meal);
-				pthread_mutex_lock(&vars->death);
-				vars->is_dead = i + 1;
-//				printf("%zu, %zu, %zu\n", i, vars->phi[i].last_meal, get_current_time() - vars->phi[i].last_meal);
-				pthread_mutex_unlock(&vars->death);
+				set_mutexed_var(&vars->is_dead, i + 1, &vars->death);
 				return ;
 			}
 			pthread_mutex_unlock(&vars->meal);
@@ -613,11 +622,9 @@ void	check_philo_status(t_vars *vars)
 			pthread_mutex_unlock(&vars->satiated_mutex);
 			i++;
 		}
-		if (n == (size_t)vars->philo_count)
+		if (n >= (size_t)vars->philo_count)
 		{
-			pthread_mutex_lock(&vars->satiated_mutex);
-			vars->satiated = 1;
-			pthread_mutex_unlock(&vars->satiated_mutex);
+			set_mutexed_var(&vars->satiated, 1, &vars->satiated_mutex);
 			return ;
 		}
 	}
@@ -632,22 +639,8 @@ int main(int argc, char **argv)
 	if (set_vars(argc, argv, &vars))
 		return (2);
 	printf("%d | %d | %d | %d\n", vars.philo_count, vars.ttd, vars.tte, vars.tts);
-	/*
-	**	INIT phiS
-	*/
 	alloc_philo_and_mutex(&vars);
-	/*
-	**	LAUNCH THREADS
-	*/
 	init_philo_and_mutex(&vars);
-	/*
-	**	CHECK END CONDITION
-	**		while (!(phi_dead() || curmeal == maxmeal))
-	**	JOIN THREADS
-	*/
-	/*
-	**	CLEAR
-	*/
 	while (vars.philo_count)
 	{
 		pthread_mutex_lock(&vars.print);
@@ -658,6 +651,8 @@ int main(int argc, char **argv)
 		}
 		pthread_mutex_unlock(&vars.print);
 	}
+	while (vars.phi[vars.philo_count - 1].status != 0)
+		usleep(100);
 	check_philo_status(&vars);
 	clear_philo_and_mutex(&vars);
 	return (0);

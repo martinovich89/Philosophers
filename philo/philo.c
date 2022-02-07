@@ -6,7 +6,7 @@
 /*   By: mhenry <mhenry@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/11/17 11:20:06 by mhenry            #+#    #+#             */
-/*   Updated: 2022/02/07 15:14:42 by mhenry           ###   ########.fr       */
+/*   Updated: 2022/02/07 18:06:13 by mhenry           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -514,8 +514,10 @@ int	init_philo_and_mutex(t_vars *vars)
 	}
 	i = 0;
 	while (i < (size_t)vars->philo_count)
+	{
 		ft_memset(&vars->phi[i], sizeof(t_phi), 0);
 		i++;
+	}
 	i = 0;
 	while (i < (size_t)vars->philo_count)
 	{
@@ -623,10 +625,7 @@ void	check_philo_status(t_vars *vars)
 			i++;
 		}
 		if (n >= (size_t)vars->philo_count)
-		{
-			set_mutexed_var(&vars->satiated, 1, &vars->satiated_mutex);
-			return ;
-		}
+			return set_mutexed_var(&vars->satiated, 1, &vars->satiated_mutex);
 	}
 }
 

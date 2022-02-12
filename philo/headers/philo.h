@@ -6,7 +6,7 @@
 /*   By: mhenry <mhenry@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/11/18 11:46:38 by mhenry            #+#    #+#             */
-/*   Updated: 2022/02/07 14:38:21 by mhenry           ###   ########.fr       */
+/*   Updated: 2022/02/12 15:52:24 by mhenry           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -45,6 +45,7 @@ typedef struct	s_phi
 	char			str_to_print[60];
 	size_t			last_meal;
 	size_t			elapsed_time;
+	int				philo_count;
 }	t_phi;
 
 typedef struct	s_vars
@@ -56,6 +57,7 @@ typedef struct	s_vars
 	pthread_mutex_t print;
 	pthread_mutex_t meal;
 	pthread_mutex_t satiated_mutex;
+	pthread_mutex_t status_mutex;
 	t_phi			*phi;
 	int				philo_count;
 	int				ttd;

@@ -4,25 +4,38 @@ INC				=	-I./headers
 
 SRC_PATH		=	./
 
-SRCS			=	./utils/strings.c ./philo.c
+PHILO			=	philo.c
 
-#SRCS			=	$(addprefix $(SRC_PATH), $(SRC))
+MEM				=	mem.c
 
-philo			=	philo.c
+TIME			=	time.c
 
-UTILS			=	utils/strings.c
+PHASE			=	phase.c
 
-SRC				=	$(philo) \
-					$(UTILS)
-#					$()
-#					$()
-#					$()
-#					$()
-#					$()
-#					$()
-#					$()
+INITS			=	inits.c
 
-OBJS			=	$(SRCS:.c=.o)
+EDIT			=	philo_edit.c
+
+PRINT			=	print.c
+
+CLEAR			=	clear.c
+
+CHECKS			=	checks.c
+
+UTILS			=	utils/strings.c utils/utils.c utils/utils2.c
+
+SRC				=	$(PHILO) \
+					$(UTILS) \
+					$(PRINT) \
+					$(MEM) \
+					$(TIME) \
+					$(INITS) \
+					$(CHECKS) \
+					$(EDIT) \
+					$(CLEAR) \
+					$(PHASE)
+
+OBJS			=	$(SRC:.c=.o)
 
 CC				=	gcc
 

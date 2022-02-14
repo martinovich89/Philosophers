@@ -6,7 +6,7 @@
 /*   By: mhenry <mhenry@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/11/17 11:19:57 by mhenry            #+#    #+#             */
-/*   Updated: 2021/11/17 11:56:19 by mhenry           ###   ########.fr       */
+/*   Updated: 2022/02/14 15:47:03 by mhenry           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,12 +14,36 @@
 
 int	ft_strlen(char *str)
 {
-	size_t i;
+	size_t	i;
 
 	i = 0;
 	while (str[i])
 		i++;
 	return (i);
+}
+
+int	ft_strcpy(char *dst, char *src)
+{
+	size_t	i;
+
+	i = 0;
+	while (src[i])
+	{
+		dst[i] = src[i];
+		i++;
+	}
+	dst[i] = '\0';
+	return (i);
+}
+
+int	ft_strcat(char *dst, char *src)
+{
+	size_t	i;
+
+	i = 0;
+	while (dst[i])
+		i++;
+	return (ft_strcpy(dst + i, src));
 }
 
 int	ft_strcmp(char *s1, char *s2)
@@ -32,7 +56,7 @@ int	ft_strcmp(char *s1, char *s2)
 	return (s2[i] - s1[i]);
 }
 
-int		ft_atoi(char *str)
+int	ft_atoi(char *str)
 {
 	size_t	i;
 	int		sign;

@@ -19,3 +19,6 @@ containers_test*
 tags
 # debug
 .gdb_history
+# additional
+.test
+.vscode

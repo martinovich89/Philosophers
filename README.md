@@ -9,9 +9,9 @@ $> ./philo arg arg arg arg (arg)
 
 args are all positive numbers. The last one is optional.  
 arg1 : amount of philosophers. Must be 0 < arg1 <= 200.  
-arg2 : tiime to die. must be a number >= 0
-arg3 : time to eat. must be a number >= 0
-arg4 : time to sleep. must be a number >= 0
+arg2 : tiime to die. must be a number >= 0  
+arg3 : time to eat. must be a number >= 0  
+arg4 : time to sleep. must be a number >= 0  
 arg5 : minimum amount of meals every philospher has to eat.  
 
 # My reading of the subject
